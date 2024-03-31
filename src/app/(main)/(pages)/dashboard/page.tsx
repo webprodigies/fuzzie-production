@@ -2,9 +2,13 @@
 import React from 'react';
 import { currentUser } from '@clerk/nextjs';
 import { db } from '@/lib/db';
-import { User as PrismaUser, UserDify } from '@prisma/client';
+import { User as PrismaUser, UserDify as PrismaUserDify, Dify } from '@prisma/client';
 import UserInfoDashboard from './_components/user-info-dashboard';
 import DifyList from './_components/dify-list-dashboard';
+
+interface UserDify extends PrismaUserDify {
+  dify: Dify;
+}
 
 interface User extends PrismaUser {
   difys: UserDify[];
@@ -39,7 +43,7 @@ const UserInfo = async (props: Props) => {
       </h1>
       <UserInfoDashboard userInfo={userInfo} />
       <hr />
-      <DifyList userDifys={userInfo.difys} />
+      {userInfo && <DifyList userDifys={userInfo.difys} />}
     </div>
   );
 }

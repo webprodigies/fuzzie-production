@@ -1,5 +1,9 @@
 import React from 'react';
-import { Dify, UserDify } from '@prisma/client';
+import { UserDify as PrismaUserDify, Dify } from '@prisma/client';
+
+interface UserDify extends PrismaUserDify {
+    dify: Dify;
+}
 
 type DifyListProps = {
     userDifys: UserDify[];
