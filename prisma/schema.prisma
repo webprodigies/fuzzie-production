@@ -31,6 +31,7 @@ model User {
   Slack                 Slack[]
   connections           Connections[]
   workflows             Workflows[]
+  difys                 UserDify[]
 }
 
 model LocalGoogleCredential {
@@ -121,4 +122,38 @@ model Workflows {
   description       String
   User              User     @relation(fields: [userId], references: [clerkId])
   userId            String
+}
+
+model Dify {
+  id            String   @id @default(uuid())
+  baseUrl       String
+  apiKey        String   @unique
+  name          String
+  description   String?
+  language      String?
+  copyright     String?
+  privacyPolicy String?
+  image         String?
+  speech        Boolean  @default(false)
+  multimodal    Boolean  @default(false)
+  costType      CostType[]
+
+  users UserDify[]
+}
+
+model UserDify {
+  userId Int
+  difyId String
+  user   User @relation(fields: [userId], references: [id])
+  dify   Dify @relation(fields: [difyId], references: [id])
+
+  @@id([userId, difyId])
+}
+
+
+enum CostType {
+  Basic
+  Knowledge
+  Tools
+  Workflow
 }

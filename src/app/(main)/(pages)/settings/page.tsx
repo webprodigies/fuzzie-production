@@ -1,3 +1,5 @@
+// fuzzie-production/src/app/(main)/(pages)/settings/page.tsx
+
 import ProfileForm from '@/components/forms/profile-form'
 import React from 'react'
 import ProfilePicture from './_components/profile-picture'
@@ -11,6 +13,7 @@ const Settings = async (props: Props) => {
   if (!authUser) return null
 
   const user = await db.user.findUnique({ where: { clerkId: authUser.id } })
+
   const removeProfileImage = async () => {
     'use server'
     const response = await db.user.update({
