@@ -12,6 +12,7 @@ const Billing = async (props: Props) => {
   const { session_id } = props.searchParams ?? {
     session_id: '',
   }
+  
   if (session_id) {
     const stripe = new Stripe(process.env.STRIPE_SECRET!, {
       typescript: true,
@@ -39,11 +40,19 @@ const Billing = async (props: Props) => {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="sticky top-0 z-[10] flex items-center justify-between border-b bg-background/50 p-6 text-4xl backdrop-blur-lg">
-        <span>Billing</span>
-      </h1>
-      <BillingDashboard />
+    <div className="flex flex-col">
+      {/* Header */}
+      <div className="border-b px-6 py-4">
+        <h1 className="text-2xl font-medium">Billing</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Manage your subscription and billing preferences
+        </p>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 p-6">
+        <BillingDashboard />
+      </div>
     </div>
   )
 }

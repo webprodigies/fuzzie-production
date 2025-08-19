@@ -1,109 +1,93 @@
 'use server'
 import { Option } from '@/components/ui/multiple-selector'
-import { db } from '@/lib/db'
+import { db, ensureDbConnection } from '@/lib/db'
 import { auth, currentUser } from '@clerk/nextjs'
 
 export const getGoogleListener = async () => {
-  const { userId } = auth()
+  try {
+    await ensureDbConnection()
+    const { userId } = auth()
+    console.log('userId:', userId)
 
-  if (userId) {
-    const listener = await db.user.findUnique({
-      where: {
-        clerkId: userId,
-      },
-      select: {
-        googleResourceId: true,
-      },
-    })
+    if (userId) {
+      const listener = await db.user.findUnique({
+        where: {
+          clerkId: userId,
+        },
+        select: {
+          googleResourceId: true,
+        },
+      })
 
-    if (listener) return listener
+      if (listener) return listener
+    }
+  } catch (error) {
+    console.error('❌ Error getting Google listener:', error)
+    return null
   }
 }
 
 export const onFlowPublish = async (workflowId: string, state: boolean) => {
-  console.log(state)
-  const published = await db.workflows.update({
-    where: {
-      id: workflowId,
-    },
-    data: {
-      publish: state,
-    },
-  })
+  try {
+    await ensureDbConnection()
+    const response = await db.workflows.update({
+      where: {
+        id: workflowId,
+      },
+      data: {
+        publish: state,
+      },
+    })
 
-  if (published.publish) return 'Workflow published'
-  return 'Workflow unpublished'
+    if (response) return { message: 'workflow published' }
+    return { message: 'Oops! try again' }
+  } catch (error) {
+    console.error('❌ Error publishing workflow:', error)
+    return { message: 'Error publishing workflow' }
+  }
 }
 
 export const onCreateNodeTemplate = async (
-  content: string,
   type: string,
+  content: string,
   workflowId: string,
-  channels?: Option[],
   accessToken?: string,
-  notionDbId?: string
+  notionDbId?: string,
+  channels?: Option[]
 ) => {
-  if (type === 'Discord') {
-    const response = await db.workflows.update({
-      where: {
-        id: workflowId,
-      },
-      data: {
-        discordTemplate: content,
-      },
-    })
-
-    if (response) {
-      return 'Discord template saved'
-    }
-  }
-  if (type === 'Slack') {
-    const response = await db.workflows.update({
-      where: {
-        id: workflowId,
-      },
-      data: {
-        slackTemplate: content,
-        slackAccessToken: accessToken,
-      },
-    })
-
-    if (response) {
-      const channelList = await db.workflows.findUnique({
+  try {
+    await ensureDbConnection()
+    
+    if (type === 'Discord') {
+      const response = await db.workflows.update({
         where: {
           id: workflowId,
         },
-        select: {
-          slackChannels: true,
+        data: {
+          discordTemplate: content,
         },
       })
 
-      if (channelList) {
+      if (response) return 'Discord template saved'
+    }
+
+    if (type === 'Slack') {
+      if (channels && channels.length > 0) {
+        const channelList = await db.workflows.findUnique({
+          where: {
+            id: workflowId,
+          },
+          select: {
+            slackChannels: true,
+          },
+        })
+
         //remove duplicates before insert
-        const NonDuplicated = channelList.slackChannels.filter(
+        const NonDuplicated = channelList?.slackChannels?.filter(
           (channel) => channel !== channels![0].value
-        )
+        ) || []
 
-        NonDuplicated!
-          .map((channel) => channel)
-          .forEach(async (channel) => {
-            await db.workflows.update({
-              where: {
-                id: workflowId,
-              },
-              data: {
-                slackChannels: {
-                  push: channel,
-                },
-              },
-            })
-          })
-
-        return 'Slack template saved'
-      }
-      channels!
-        .map((channel) => channel.value)
-        .forEach(async (channel) => {
+        for (const channel of NonDuplicated) {
           await db.workflows.update({
             where: {
               id: workflowId,
@@ -114,67 +98,104 @@ export const onCreateNodeTemplate = async (
               },
             },
           })
+        }
+
+        return 'Slack template saved'
+      }
+      
+      for (const channel of channels || []) {
+        await db.workflows.update({
+          where: {
+            id: workflowId,
+          },
+          data: {
+            slackChannels: {
+              push: channel.value,
+            },
+          },
         })
+      }
       return 'Slack template saved'
     }
-  }
 
-  if (type === 'Notion') {
-    const response = await db.workflows.update({
-      where: {
-        id: workflowId,
-      },
-      data: {
-        notionTemplate: content,
-        notionAccessToken: accessToken,
-        notionDbId: notionDbId,
-      },
-    })
+    if (type === 'Notion') {
+      const response = await db.workflows.update({
+        where: {
+          id: workflowId,
+        },
+        data: {
+          notionTemplate: content,
+          notionAccessToken: accessToken,
+          notionDbId: notionDbId,
+        },
+      })
 
-    if (response) return 'Notion template saved'
+      if (response) return 'Notion template saved'
+    }
+  } catch (error) {
+    console.error('❌ Error creating node template:', error)
+    return 'Error saving template'
   }
 }
 
 export const onGetWorkflows = async () => {
-  const user = await currentUser()
-  if (user) {
-    const workflow = await db.workflows.findMany({
-      where: {
-        userId: user.id,
-      },
-    })
+  try {
+    await ensureDbConnection()
+    const user = await currentUser()
+    if (user) {
+      const workflow = await db.workflows.findMany({
+        where: {
+          userId: user.id,
+        },
+      })
 
-    if (workflow) return workflow
+      if (workflow) return workflow
+    }
+  } catch (error) {
+    console.error('❌ Error getting workflows:', error)
+    return []
   }
 }
 
 export const onCreateWorkflow = async (name: string, description: string) => {
-  const user = await currentUser()
+  try {
+    await ensureDbConnection()
+    const user = await currentUser()
 
-  if (user) {
-    //create new workflow
-    const workflow = await db.workflows.create({
-      data: {
-        userId: user.id,
-        name,
-        description,
-      },
-    })
+    if (user) {
+      //create new workflow
+      const workflow = await db.workflows.create({
+        data: {
+          userId: user.id,
+          name,
+          description,
+        },
+      })
 
-    if (workflow) return { message: 'workflow created' }
-    return { message: 'Oops! try again' }
+      if (workflow) return { message: 'workflow created' }
+      return { message: 'Oops! try again' }
+    }
+  } catch (error) {
+    console.error('❌ Error creating workflow:', error)
+    return { message: 'Error creating workflow' }
   }
 }
 
 export const onGetNodesEdges = async (flowId: string) => {
-  const nodesEdges = await db.workflows.findUnique({
-    where: {
-      id: flowId,
-    },
-    select: {
-      nodes: true,
-      edges: true,
-    },
-  })
-  if (nodesEdges?.nodes && nodesEdges?.edges) return nodesEdges
+  try {
+    await ensureDbConnection()
+    const nodesEdges = await db.workflows.findUnique({
+      where: {
+        id: flowId,
+      },
+      select: {
+        nodes: true,
+        edges: true,
+      },
+    })
+    if (nodesEdges?.nodes && nodesEdges?.edges) return nodesEdges
+  } catch (error) {
+    console.error('❌ Error getting nodes and edges:', error)
+    return null
+  }
 }

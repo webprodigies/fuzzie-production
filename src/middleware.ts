@@ -4,8 +4,18 @@ export default authMiddleware({
   publicRoutes: [
     '/',
     '/api/clerk-webhook',
+    '/api/clerk-webhook-debug',
+    '/api/test-webhook',
+    '/api/webhook-status',
+    '/api/create-user',
+    '/api/test-create-user',
+    '/api/health-check',
     '/api/drive-activity/notification',
     '/api/payment/success',
+    '/api/test-db',
+    '/api/test-user',
+    '/api/webhook-test',
+    '/api/simple-test',
   ],
   ignoredRoutes: [
     '/api/auth/callback/discord',

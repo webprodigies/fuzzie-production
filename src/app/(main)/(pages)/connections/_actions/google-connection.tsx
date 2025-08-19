@@ -12,6 +12,7 @@ export const getFileMetaData = async () => {
   )
 
   const { userId } = auth()
+  
 
   if (!userId) {
     return { message: 'User not found' }

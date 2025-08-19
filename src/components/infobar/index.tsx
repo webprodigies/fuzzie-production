@@ -1,10 +1,7 @@
 'use client'
-import React, { useEffect } from 'react'
-import { ModeToggle } from '../global/mode-toggle'
-import { Book, Headphones, Search } from 'lucide-react'
-import Templates from '../icons/cloud_download'
+import React, { useEffect, useState } from 'react'
+import { Search, Bell, Settings } from 'lucide-react'
 import { Input } from '@/components/ui/input'
-
 import {
   Tooltip,
   TooltipContent,
@@ -14,11 +11,13 @@ import {
 import { UserButton } from '@clerk/nextjs'
 import { useBilling } from '@/providers/billing-provider'
 import { onPaymentDetails } from '@/app/(main)/(pages)/billing/_actions/payment-connecetions'
+import clsx from 'clsx'
 
 type Props = {}
 
 const InfoBar = (props: Props) => {
   const { credits, tier, setCredits, setTier } = useBilling()
+  const [searchQuery, setSearchQuery] = useState('')
 
   const onGetPayment = async () => {
     const response = await onPaymentDetails()
@@ -33,45 +32,70 @@ const InfoBar = (props: Props) => {
   }, [])
 
   return (
-    <div className="flex flex-row justify-end gap-6 items-center px-4 py-4 w-full dark:bg-black ">
-      <span className="flex items-center gap-2 font-bold">
-        <p className="text-sm font-light text-gray-300">Credits</p>
-        {tier == 'Unlimited' ? (
-          <span>Unlimited</span>
-        ) : (
-          <span>
-            {credits}/{tier == 'Free' ? '10' : tier == 'Pro' && '100'}
+    <div className="navbar-minimal flex items-center justify-between">
+      {/* Search */}
+      <div className="flex items-center gap-3 flex-1 max-w-md">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="input-minimal pl-10 h-9"
+          />
+        </div>
+      </div>
+
+      {/* Right Section */}
+      <div className="flex items-center gap-4">
+        {/* Credits */}
+        <div className="text-sm text-muted-foreground">
+          <span className="font-medium">
+            {tier === 'Unlimited' ? '∞' : credits}
           </span>
-        )}
-      </span>
-      <span className="flex items-center rounded-full bg-muted px-4">
-        <Search />
-        <Input
-          placeholder="Quick Search"
-          className="border-none bg-transparent"
+          {tier !== 'Unlimited' && (
+            <span className="text-xs ml-1">
+              / {tier === 'Free' ? '10' : '100'}
+            </span>
+          )}
+        </div>
+
+        {/* Actions */}
+        <TooltipProvider>
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <button className="btn-ghost h-9 w-9 p-0">
+                <Bell className="h-4 w-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Notifications</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
+        <TooltipProvider>
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <button className="btn-ghost h-9 w-9 p-0">
+                <Settings className="h-4 w-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Settings</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
+        {/* User */}
+        <UserButton 
+          appearance={{
+            elements: {
+              avatarBox: "h-8 w-8",
+            }
+          }}
         />
-      </span>
-      <TooltipProvider>
-        <Tooltip delayDuration={0}>
-          <TooltipTrigger>
-            <Headphones />
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Contact Support</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-      <TooltipProvider>
-        <Tooltip delayDuration={0}>
-          <TooltipTrigger>
-            <Book />
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Guide</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-      <UserButton />
+      </div>
     </div>
   )
 }
